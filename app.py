@@ -7,6 +7,10 @@ from PIL import Image
 import matplotlib.cm as cm
 import os
 
+import torch
+import torch.nn as nn
+from torchvision import transforms, models
+
 st.set_page_config(page_title="FreshScan AI", page_icon="🍃", layout="wide")
 
 st.markdown("""
@@ -107,11 +111,66 @@ def overlay_gradcam(pil_img, heatmap, alpha=0.45):
     overlay = Image.blend(Image.fromarray(img), jet_img, alpha=alpha)
     return overlay
 
+SCORE_MODEL_PATH = "best_model.pth" 
+
+# ── Freshness Score Model (Strawberry only) ─────────────
+class EfficientNetRegressor(nn.Module):
+    def __init__(self, dropout1=0.4, dropout2=0.2):
+        super().__init__()
+        # No download during deployment; weights come from best_model.pth
+        self.backbone = models.efficientnet_b0(weights=None)
+        in_features = self.backbone.classifier[1].in_features
+        self.backbone.classifier = nn.Identity()
+        self.regressor = nn.Sequential(
+            nn.Linear(in_features, 512),
+            nn.BatchNorm1d(512),
+            nn.GELU(),
+            nn.Dropout(dropout1),
+            nn.Linear(512, 128),
+            nn.BatchNorm1d(128),
+            nn.GELU(),
+            nn.Dropout(dropout2),
+            nn.Linear(128, 32),
+            nn.GELU(),
+            nn.Linear(32, 1)
+        )
+    def forward(self, x):
+        features = self.backbone(x)
+        score = self.regressor(features).squeeze(1)
+        score = torch.clamp(score, 0.0, 1.0)
+        return score
+
+@st.cache_resource
+def load_score_model():
+    if not os.path.exists(SCORE_MODEL_PATH):
+        return None
+    device = torch.device("cpu")
+    score_model = EfficientNetRegressor().to(device)
+    state_dict = torch.load(SCORE_MODEL_PATH, map_location=device)
+    score_model.load_state_dict(state_dict)
+    score_model.eval()
+    return score_model
+
+def predict_freshness_score(score_model, pil_img):
+    if score_model is None:
+        return None
+    imagenet_mean = [0.485, 0.456, 0.406]
+    imagenet_std  = [0.229, 0.224, 0.225]
+    score_transform = transforms.Compose([
+        transforms.Resize((224, 224)),
+        transforms.ToTensor(),
+        transforms.Normalize(mean=imagenet_mean, std=imagenet_std),
+    ])
+    x = score_transform(pil_img.convert("RGB")).unsqueeze(0)
+    with torch.no_grad():
+        score_0_1 = float(score_model(x).item())
+    return max(0.0, min(10.0, score_0_1 * 10.0))
+
 # ── Sidebar ──────────────────────────────────────
 with st.sidebar:
     st.markdown("### 🍃 FreshScan AI")
     st.markdown("---")
-    st.markdown("**نبذة عن النموذج**")
+    st.markdown("**نبذة عن نموذج التصنيف**")
     st.markdown("""
     <div style='font-size:0.82rem;color:#5a7a60;line-height:2;'>
     • النموذج: <span style='color:#e8f5eb'>EfficientNetB0</span><br>
@@ -139,6 +198,8 @@ if model is None:
     st.error("لم يتم العثور على النموذج في:\n`/content/drive/MyDrive/best_fruit_model.keras`")
     st.stop()
 
+score_model = load_score_model()
+
 tab_upload, tab_camera = st.tabs(["📁  رفع صورة", "📷  كاميرا"])
 pil_img = None
 
@@ -157,6 +218,10 @@ if pil_img is not None:
     st.markdown("---")
     with st.spinner("جاري التحليل..."):
         label, item, is_fresh, confidence, arr = predict(model, pil_img)
+        
+        freshness_score = None
+        if item == "Strawberry":
+            freshness_score = predict_freshness_score(score_model, pil_img)
         class_idx = CLASS_NAMES.index(label)
         try:
             heatmap     = make_gradcam(model, arr, class_idx)
@@ -190,6 +255,16 @@ if pil_img is not None:
         st.markdown(f'<div class="info-row">نسبة الثقة: <span>{confidence*100:.1f}%</span></div>',
                     unsafe_allow_html=True)
         st.markdown(f'<div class="info-row">الفئة: <span>{label}</span></div>',
+                    unsafe_allow_html=True)
+
+        if item == "Strawberry":
+            if freshness_score is not None:
+                st.markdown(
+                    f'<div class="info-row">درجة النضارة: <span>{freshness_score:.2f} / 10</span></div>',
+                    unsafe_allow_html=True)
+            else:
+                st.markdown(
+                    '<div class="info-row">درجة النضارة: <span>غير متوفرة لهذا الصنف</span></div>',
                     unsafe_allow_html=True)
         st.markdown("</div>", unsafe_allow_html=True)
 
