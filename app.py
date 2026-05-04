@@ -159,7 +159,6 @@ def predict_freshness_score(score_model, pil_img):
     score_transform = transforms.Compose([
         transforms.Resize((224, 224)),
         transforms.ToTensor(),
-        transforms.Normalize(mean=imagenet_mean, std=imagenet_std),
     ])
     x = score_transform(pil_img.convert("RGB")).unsqueeze(0)
     with torch.no_grad():
