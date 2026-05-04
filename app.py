@@ -219,7 +219,6 @@ if pil_img is not None:
     with st.spinner("جاري التحليل..."):
         label, item, is_fresh, confidence, arr = predict(model, pil_img)
         
-        freshness_score = None
         if item == "Strawberry":
             freshness_score = predict_freshness_score(score_model, pil_img)
         class_idx = CLASS_NAMES.index(label)
@@ -258,13 +257,8 @@ if pil_img is not None:
                     unsafe_allow_html=True)
 
         if item == "Strawberry":
-            if freshness_score is not None:
                 st.markdown(
                     f'<div class="info-row">درجة النضارة: <span>{freshness_score:.2f} / 10</span></div>',
-                    unsafe_allow_html=True)
-            else:
-                st.markdown(
-                    '<div class="info-row">درجة النضارة: <span>غير متوفرة لهذا الصنف</span></div>',
                     unsafe_allow_html=True)
         st.markdown("</div>", unsafe_allow_html=True)
 
