@@ -137,6 +137,7 @@ class EfficientNetRegressor(nn.Module):
     def forward(self, x):
         features = self.backbone(x)
         score = self.regressor(features).squeeze(1)
+        score = torch.clamp(score, 0.0, 1.0)
         return score
 
 @st.cache_resource
