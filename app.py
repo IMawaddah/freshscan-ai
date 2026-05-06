@@ -189,7 +189,7 @@ with st.sidebar:
         )
 
 # ── Main ─────────────────────────────────────────
-st.markdown("## تحليل الطازجية 🔬")
+st.markdown("## فحص النضارة 🔬")
 st.markdown(
     '<p style="color:#5a7a60;margin-top:-8px;">ارفع صورة أو التقطها من الكاميرا</p>',
     unsafe_allow_html=True
