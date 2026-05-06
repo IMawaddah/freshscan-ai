@@ -146,7 +146,10 @@ def load_score_model():
         return None
     device = torch.device("cpu")
     score_model = EfficientNetRegressor().to(device)
-    state_dict = torch.load(SCORE_MODEL_PATH, map_location=device)
+    
+    # 🔒 التعديل الأمني 1: إضافة weights_only=True لمنع تنفيذ أكواد خبيثة
+    state_dict = torch.load(SCORE_MODEL_PATH, map_location=device, weights_only=True)
+    
     score_model.load_state_dict(state_dict)
     score_model.eval()
     return score_model
@@ -194,7 +197,8 @@ st.markdown(
 
 model = load_model()
 if model is None:
-    st.error("لم يتم العثور على النموذج في:\n`/content/drive/MyDrive/best_fruit_model.keras`")
+    # 🔒 التعديل الأمني 2: إزالة المسار الفعلي للحفاظ على خصوصية الخادم
+    st.error("لم يتم العثور على نموذج التصنيف. يرجى التأكد من وجود ملف `best_fruit_model.keras` في مسار التطبيق.")
     st.stop()
 
 score_model = load_score_model()
@@ -206,12 +210,22 @@ with tab_upload:
     uploaded = st.file_uploader("اختر صورة", type=["jpg","jpeg","png"],
                                 label_visibility="collapsed")
     if uploaded:
-        pil_img = Image.open(uploaded).convert("RGB")
+        # 🔒 التعديل الأمني 3: التعامل الآمن مع الملفات المرفوعة
+        try:
+            pil_img = Image.open(uploaded).convert("RGB")
+        except Exception:
+            st.error("عذراً، الملف المرفوع غير صالح كصورة. يرجى رفع ملف صحيح.")
+            pil_img = None
 
 with tab_camera:
     cam = st.camera_input("التقط صورة")
     if cam:
-        pil_img = Image.open(cam).convert("RGB")
+        # 🔒 التعديل الأمني 3: التعامل الآمن مع صور الكاميرا
+        try:
+            pil_img = Image.open(cam).convert("RGB")
+        except Exception:
+            st.error("حدث خطأ أثناء قراءة الصورة من الكاميرا.")
+            pil_img = None
 
 if pil_img is not None:
     st.markdown("---")
@@ -227,7 +241,8 @@ if pil_img is not None:
             gradcam_ok  = True
         except Exception as e:
             gradcam_ok  = False
-            gradcam_err = str(e)
+            # يمكن ترك طباعة الخطأ هنا للـ Console لمساعدتك في التطوير
+            print(f"Grad-CAM generation error: {e}") 
 
     col1, col2, col3 = st.columns(3)
 
@@ -273,7 +288,8 @@ if pil_img is not None:
               <span style='font-size:0.75rem;color:#5a7a60;'>🔵 تاثير منخفض</span>
             </div>""", unsafe_allow_html=True)
         else:
-            st.warning(f"تعذر توليد Grad-CAM: {gradcam_err}")
+            # 🔒 التعديل الأمني 4: إخفاء رسالة الخطأ التقنية عن المستخدم
+            st.warning("تعذر توليد خريطة التوضيح (Grad-CAM) لهذه الصورة.")
         st.markdown("</div>", unsafe_allow_html=True)
 
 else:
