@@ -111,7 +111,7 @@ def overlay_gradcam(pil_img, heatmap, alpha=0.45):
     overlay = Image.blend(Image.fromarray(img), jet_img, alpha=alpha)
     return overlay
 
-SCORE_MODEL_PATH = "best_model.pth" 
+SCORE_MODEL_PATH = "best_model-2.pth" 
 
 # ── Freshness Score Model (Strawberry only) ─────────────
 class EfficientNetRegressor(nn.Module):
