@@ -56,7 +56,7 @@ EMOJIS = {
     'Strawberry':'🍓','Tomato':'🍅'
 }
 
-MODEL_PATH = "best_fruit_model.keras"
+MODEL_PATH = "best_fruit_model (1).keras"
 
 @st.cache_resource
 def load_model():
@@ -177,7 +177,7 @@ with st.sidebar:
     <div style='font-size:0.82rem;color:#5a7a60;line-height:2;'>
     • النموذج: <span style='color:#e8f5eb'>EfficientNetB0</span><br>
     • الفئات: <span style='color:#e8f5eb'>20 فئة</span><br>
-    • دقة التحقق: <span style='color:#2dff6e'>~96.9%</span><br>
+    • دقة النموذج: <span style='color:#2dff6e'>~98%</span><br>
     • XAI: <span style='color:#e8f5eb'>Grad-CAM</span>
     </div>""", unsafe_allow_html=True)
     st.markdown("---")
