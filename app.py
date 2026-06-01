@@ -56,7 +56,7 @@ EMOJIS = {
     'Strawberry':'🍓','Tomato':'🍅'
 }
 
-MODEL_PATH = "best_fruit_model (1).keras"
+MODEL_PATH = "best_fruit_model.keras"
 
 @st.cache_resource
 def load_model():
