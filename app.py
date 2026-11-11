@@ -117,7 +117,7 @@ SCORE_MODEL_PATH = "best_model-2.pth"
 class EfficientNetRegressor(nn.Module):
     def __init__(self, dropout1=0.4, dropout2=0.2):
         super().__init__()
-        # No download during deployment; weights come from best_model.pth
+        # No download during deployment; weights come from best_model-2.pth
         self.backbone = models.efficientnet_b0(weights=None)
         in_features = self.backbone.classifier[1].in_features
         self.backbone.classifier = nn.Identity()
